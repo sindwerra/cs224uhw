@@ -1,4 +1,7 @@
+import json
+
 import torch
+from sklearn.metrics import classification_report
 
 from torch_shallow_neural_classifier import TorchShallowNeuralClassifier
 
@@ -18,10 +21,10 @@ class ClassifierModule(nn.Module):
         super().__init__()
         # This is specific sentiment analysis task, just hard code for 3 classes if fine
         self.n_classes = 3 
-        self.core_model = AutoModelForSequenceClassification.from_pretrained(model_name)
+        self.core_model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=self.n_classes)
         self.core_model.train()
         self.classifier_mode = classifier_mode
-        self.hidden_dim = self.core_model.embeddings.word_embeddings.embedding_dim
+        self.hidden_dim = self.core_model.config.hidden_size
         self.p = p # Dropout probability
 
         # Use this as the classifier layer's activation function choice flag: Swish, Relu, Gelu
@@ -32,7 +35,7 @@ class ClassifierModule(nn.Module):
         else:
             self.activation = nn.SiLU(inplace=True)
 
-        # Use this as the final classifier choice: MaxPooling, AvgPooling, Pooler, Logits
+        # Use this as the final classifier choice: MaxPooling, AvgPooling, Logits
         self.classifier = nn.Sequential(
             nn.Linear(self.hidden_dim, self.hidden_dim * 4), # Follow standard transformer design
             self.activation,
@@ -42,14 +45,12 @@ class ClassifierModule(nn.Module):
         )
 
     def forward(self, x, attention_mask):
-        x = self.core_model(x, attention_mask=attention_mask)
-        if self.classifier_mode == "pooler":
-            out = self.classifier(x.pooler_output)
-        elif self.classifier_mode == "max_pooling":
-            x = torch.max(x.hidden_states, dim=1).values
+        x = self.core_model(x, attention_mask=attention_mask, output_hidden_states=True)
+        if self.classifier_mode == "max_pooling":
+            x = torch.max(x.hidden_states[-1], dim=1).values
             out = self.classifier(x)
         elif self.classifier_mode == "avg_pooling":
-            x = torch.mean(x.hidden_states, dim=1)
+            x = torch.mean(x.hidden_states[-1], dim=1)
             out = self.classifier(x)
         else:
             out = x.logits
@@ -137,7 +138,7 @@ def train(
 ):
     device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     print(f"Current Device {device}")
-    classifier_modes = ["max_pooling", "avg_pooling", "pooler", "logits"]
+    classifier_modes = ["max_pooling", "avg_pooling", "logits"]
     activation_names = ["relu", "gelu", "swish"]
     ds_name = dataset["name"]
     print(f"Current Dataset is {ds_name}")
@@ -161,11 +162,15 @@ def train(
                     optimizer_class=torch.optim.AdamW,
                     l2_strength=1e-2,
                     device=device,
+                    max_iter=2
                 )
                 mdl = classifier.fit(
                     ds["train"]["sentence"],
                     ds["train"]["gold_label"],
                 )
+                print("\nClassification Report Generation...")
+                preds = classifier.predict(ds["validation"]["sentence"])
+                report = classification_report(ds["validation"]["gold_label"], preds, digits=5)
                 experiment_results.append({
                     "model_name": model_name,
                     "classifier_mode": cls_mode,
@@ -174,13 +179,26 @@ def train(
                     "device": device,
                     "best_error": mdl.best_error,
                     "best_score": mdl.best_score,
-                    "validation_score": mdl.validation_scores
+                    "validation_score": mdl.validation_scores,
+                    "validation_report": report
                 })
                 # mdl.best_parameters 是模型参数，后面要用
+                # torch.save(mdl.best_parameters, f"{model_name}-{cls_mode}-{hidden_activation}-{}.pth")
             # FIXME 把数据集确定
+    return experiment_results
+
 
 if __name__ == "__main__":
-    train(
-        model_names=["pn89348/sarcasm_model"],
+    results = train(
+        model_names=[
+            "ProsusAI/finbert",
+            "pn89348/sarcasm_model",
+            "distilbert/distilbert-base-uncased-finetuned-sst-2-english",
+            "cardiffnlp/twitter-roberta-base-sentiment-latest",
+            "google/electra-base-discriminator",
+        ],
         dataset={"path": "dynabench/dynasent", "name": "dynabench.dynasent.r2.all"},
+        batch_size=64,
     )
+    with open("running_results-dynasent.r2.json", "w") as f:
+        json.dump(results, f)
