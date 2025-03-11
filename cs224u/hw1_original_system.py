@@ -192,10 +192,11 @@ if __name__ == "__main__":
     results = train(
         model_names=[
             "ProsusAI/finbert",
-            "pn89348/sarcasm_model",
             "distilbert/distilbert-base-uncased-finetuned-sst-2-english",
             "cardiffnlp/twitter-roberta-base-sentiment-latest",
             "google/electra-base-discriminator",
+            "BAAI/bge-reranker-v2-m3",
+            "j-hartmann/emotion-english-distilroberta-base"
         ],
         dataset={"path": "dynabench/dynasent", "name": "dynabench.dynasent.r2.all"},
         batch_size=64,
