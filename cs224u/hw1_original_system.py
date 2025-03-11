@@ -132,8 +132,8 @@ def get_batch_token_ids(batch, tokenizer):
 def train(
     model_names,
     dataset,
-    lr=1e-5,
-    batch_size=32,
+    lr=5e-5,
+    batch_size=256,
     n_iter_no_changes=5
 ):
     device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
@@ -182,8 +182,10 @@ def train(
                     "validation_score": mdl.validation_scores,
                     "validation_report": report
                 })
-                # mdl.best_parameters 是模型参数，后面要用
-                # torch.save(mdl.best_parameters, f"{model_name}-{cls_mode}-{hidden_activation}-{}.pth")
+                mdl_name = model_name.split("/")[-1]
+                torch.save(mdl.best_parameters, f"{mdl_name}-{cls_mode}-{hidden_activation}-{ds_name}.pth")
+                with open(f"/content/drive/MyDrive/CS224U/{mdl_name}-CLS:{cls_mode}-ACT:{hidden_activation}-DS:{ds_name}-LR:{lr}-BS:{batch_size}.json", "w") as f:
+                    json.dump(results, f)
             # FIXME 把数据集确定
     return experiment_results
 
@@ -195,11 +197,9 @@ if __name__ == "__main__":
             "distilbert/distilbert-base-uncased-finetuned-sst-2-english",
             "cardiffnlp/twitter-roberta-base-sentiment-latest",
             "google/electra-base-discriminator",
-            "BAAI/bge-reranker-v2-m3",
-            "j-hartmann/emotion-english-distilroberta-base"
+            "j-hartmann/emotion-english-distilroberta-base",
+            "microsoft/deberta-v3-base"
         ],
         dataset={"path": "dynabench/dynasent", "name": "dynabench.dynasent.r2.all"},
-        batch_size=64,
+        batch_size=256,
     )
-    with open("running_results-dynasent.r2.json", "w") as f:
-        json.dump(results, f)
