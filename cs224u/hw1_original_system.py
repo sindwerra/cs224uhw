@@ -183,7 +183,7 @@ def train(
                     "validation_report": report
                 }
                 mdl_name = model_name.split("/")[-1]
-                with open(f"{mdl_name}-{cls_mode}-{hidden_activation}-{ds_name}.json", "w") as f:
+                with open(f"/content/drive/MyDrive/CS224U/{mdl_name}-{cls_mode}-{hidden_activation}-{ds_name}.json", "w") as f:
                     json.dump(results, f)
                 # mdl.best_parameters 是模型参数，后面要用
                 # torch.save(mdl.best_parameters, f"{model_name}-{cls_mode}-{hidden_activation}-{}.pth")
@@ -198,8 +198,8 @@ if __name__ == "__main__":
             "distilbert/distilbert-base-uncased-finetuned-sst-2-english",
             "cardiffnlp/twitter-roberta-base-sentiment-latest",
             "google/electra-base-discriminator",
-            "BAAI/bge-reranker-v2-m3",
-            "j-hartmann/emotion-english-distilroberta-base"
+            "j-hartmann/emotion-english-distilroberta-base",
+            "microsoft/deberta-v3-base",
         ],
         dataset={"path": "dynabench/dynasent", "name": "dynabench.dynasent.r2.all"},
         batch_size=64,
