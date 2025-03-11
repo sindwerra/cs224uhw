@@ -162,7 +162,7 @@ def train(
                     optimizer_class=torch.optim.AdamW,
                     l2_strength=1e-2,
                     device=device,
-                    max_iter=2
+                    max_iter=50,
                 )
                 mdl = classifier.fit(
                     ds["train"]["sentence"],
