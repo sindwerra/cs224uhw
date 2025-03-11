@@ -171,7 +171,7 @@ def train(
                 print("\nClassification Report Generation...")
                 preds = classifier.predict(ds["validation"]["sentence"])
                 report = classification_report(ds["validation"]["gold_label"], preds, digits=5)
-                experiment_results.append({
+                results = {
                     "model_name": model_name,
                     "classifier_mode": cls_mode,
                     "activation": hidden_activation,
@@ -181,7 +181,7 @@ def train(
                     "best_score": mdl.best_score,
                     "validation_score": mdl.validation_scores,
                     "validation_report": report
-                })
+                }
                 mdl_name = model_name.split("/")[-1]
                 with open(f"{mdl_name}-{cls_mode}-{hidden_activation}-{ds_name}.json", "w") as f:
                     json.dump(results, f)
