@@ -182,7 +182,7 @@ def train(
                     "validation_score": mdl.validation_scores,
                     "validation_report": report
                 })
-                with open(f"{model_name}-{cls_mode}-{hidden_activation}-{dataset}.json", "w") as f:
+                with open(f"{model_name}-{cls_mode}-{hidden_activation}-{ds_name}.json", "w") as f:
                     json.dump(results, f)
                 # mdl.best_parameters 是模型参数，后面要用
                 # torch.save(mdl.best_parameters, f"{model_name}-{cls_mode}-{hidden_activation}-{}.pth")
