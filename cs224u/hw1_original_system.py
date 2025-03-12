@@ -138,8 +138,8 @@ def train(
 ):
     device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     print(f"Current Device {device}")
-    classifier_modes = ["max_pooling", "avg_pooling", "logits"]
-    activation_names = ["relu", "gelu", "swish"]
+    classifier_modes = ["avg_pooling", "logits"]
+    activation_names = ["gelu", "swish"]
     ds_name = dataset["name"]
     print(f"Current Dataset is {ds_name}")
     ds = load_dataset(dataset["path"], dataset["name"], trust_remote_code=True)
