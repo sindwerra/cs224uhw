@@ -204,6 +204,6 @@ if __name__ == "__main__":
             "j-hartmann/emotion-english-distilroberta-base",
             "microsoft/deberta-v3-base"
         ],
-        dataset={"path": "dynabench/dynasent", "name": "dynabench.dynasent.r2.all"},
-        batch_size=256,
+        dataset={"path": "dynabench/dynasent", "name": 'dynabench.dynasent.r1.all'},
+        batch_size=128,
     )
