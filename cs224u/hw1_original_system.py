@@ -162,7 +162,7 @@ def train(
                     optimizer_class=torch.optim.AdamW,
                     l2_strength=1e-2,
                     device=device,
-                    max_iter=2
+                    max_iter=50
                 )
                 mdl = classifier.fit(
                     ds["train"]["sentence"],
@@ -171,7 +171,7 @@ def train(
                 print("\nClassification Report Generation...")
                 preds = classifier.predict(ds["validation"]["sentence"])
                 report = classification_report(ds["validation"]["gold_label"], preds, digits=5)
-                experiment_results.append({
+                results = {
                     "model_name": model_name,
                     "classifier_mode": cls_mode,
                     "activation": hidden_activation,
@@ -181,7 +181,7 @@ def train(
                     "best_score": mdl.best_score,
                     "validation_score": mdl.validation_scores,
                     "validation_report": report
-                })
+                }
                 mdl_name = model_name.split("/")[-1]
                 torch.save(mdl.best_parameters, f"{mdl_name}-{cls_mode}-{hidden_activation}-{ds_name}.pth")
                 with open(f"/content/drive/MyDrive/CS224U/{mdl_name}-CLS:{cls_mode}-ACT:{hidden_activation}-DS:{ds_name}-LR:{lr}-BS:{batch_size}.json", "w") as f:
@@ -193,12 +193,12 @@ def train(
 if __name__ == "__main__":
     results = train(
         model_names=[
-            "ProsusAI/finbert",
-            "distilbert/distilbert-base-uncased-finetuned-sst-2-english",
+            # "ProsusAI/finbert",
+            # "distilbert/distilbert-base-uncased-finetuned-sst-2-english",
             "cardiffnlp/twitter-roberta-base-sentiment-latest",
-            "google/electra-base-discriminator",
-            "j-hartmann/emotion-english-distilroberta-base",
-            "microsoft/deberta-v3-base"
+            # "google/electra-base-discriminator",
+            # "j-hartmann/emotion-english-distilroberta-base",
+            # "microsoft/deberta-v3-base"
         ],
         dataset={"path": "dynabench/dynasent", "name": "dynabench.dynasent.r2.all"},
         batch_size=256,
