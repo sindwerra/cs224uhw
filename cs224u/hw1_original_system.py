@@ -21,7 +21,11 @@ class ClassifierModule(nn.Module):
         super().__init__()
         # This is specific sentiment analysis task, just hard code for 3 classes if fine
         self.n_classes = 3 
-        self.core_model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=self.n_classes)
+        self.core_model = AutoModelForSequenceClassification.from_pretrained(
+            model_name,
+            num_labels=self.n_classes,
+            ignore_mismatched_sizes=True
+        )
         self.core_model.train()
         self.classifier_mode = classifier_mode
         self.hidden_dim = self.core_model.config.hidden_size
@@ -184,7 +188,7 @@ def train(
                 }
                 mdl_name = model_name.split("/")[-1]
                 torch.save(mdl.best_parameters, f"{mdl_name}-{cls_mode}-{hidden_activation}-{ds_name}.pth")
-                with open(f"/content/drive/MyDrive/CS224U/{mdl_name}-CLS:{cls_mode}-ACT:{hidden_activation}-DS:{ds_name}-LR:{lr}-BS:{batch_size}.json", "w") as f:
+                with open(f"./running_results/{mdl_name}-CLS:{cls_mode}-ACT:{hidden_activation}-DS:{ds_name}-LR:{lr}-BS:{batch_size}.json", "w") as f:
                     json.dump(results, f)
             # FIXME 把数据集确定
     return experiment_results
@@ -195,10 +199,10 @@ if __name__ == "__main__":
         model_names=[
             # "ProsusAI/finbert",
             # "distilbert/distilbert-base-uncased-finetuned-sst-2-english",
-            "cardiffnlp/twitter-roberta-base-sentiment-latest",
+            # "cardiffnlp/twitter-roberta-base-sentiment-latest",
             # "google/electra-base-discriminator",
-            # "j-hartmann/emotion-english-distilroberta-base",
-            # "microsoft/deberta-v3-base"
+            "j-hartmann/emotion-english-distilroberta-base",
+            "microsoft/deberta-v3-base"
         ],
         dataset={"path": "dynabench/dynasent", "name": "dynabench.dynasent.r2.all"},
         batch_size=256,
