@@ -82,14 +82,16 @@ class SentimentClassifier(pl.LightningModule):
             num_experts: int = 5,
             num_labels: int = 3,
             hidden_size: int = 768,
-            dropout: float = 0.1,
+            dropout: float = 0.4,
             learning_rate: float = 2e-5
     ):
         super().__init__()
         self.save_hyperparameters()  # 这个直接把上面的所有args都保存了，也就是lr也保存起来了，这个特性实在不是很好...
 
         # 加载预训练模型
-        self.deberta = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+        self.roberta = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+        self.deberta.config.hidden_dropout_prob = dropout
+        self.deberta.config.attention_probs_dropout_prob = dropout
 
         # 专家模型
         self.experts = nn.ModuleList([
@@ -304,7 +306,7 @@ def train_model():
     # 配置参数
     config = {
         'model_name': "cardiffnlp/twitter-roberta-base-sentiment-latest",
-        'batch_size': 16,
+        'batch_size': 64,
         'max_length': 512,
         'num_experts': 5,
         'learning_rate': 2e-5,
