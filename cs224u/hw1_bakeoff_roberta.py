@@ -305,7 +305,7 @@ class SentimentDataModule(pl.LightningDataModule):
 def train_model():
     # 配置参数
     config = {
-        'model_name': "google/electra-base-discriminator",
+        'model_name': "cardiffnlp/twitter-roberta-base-sentiment-latest",
         'batch_size': 64,
         'max_length': 512,
         'num_experts': 5,
