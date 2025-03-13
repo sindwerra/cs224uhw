@@ -30,7 +30,7 @@ class SentimentDataset(torch.utils.data.Dataset):
 
         for item in dataset:
             # 统一输入格式
-            dist = [convert_sst_label(s) for s in item["label_text"]]
+            dist = convert_sst_label(item["label_text"])
             processed_data.append({
                 "sentence": item["text"],
                 "gold_label": dist,
@@ -50,7 +50,8 @@ class SentimentDataset(torch.utils.data.Dataset):
             padding='max_length',
             return_tensors='pt'
         )
-
+        if isinstance(item['gold_label'], list):
+            print(item['gold_label'])
         return {
             'input_ids': encoding['input_ids'].squeeze(),
             'attention_mask': encoding['attention_mask'].squeeze(),
@@ -261,14 +262,12 @@ class SentimentDataModule(pl.LightningDataModule):
         ])
 
         # 计算类别权重
-        all_labels = [ent["labels"] for ent in self.train_dataset]
+        all_labels = [ent["labels"].item() for ent in self.train_dataset]
         label_counts = Counter(all_labels)
         max_count = max(label_counts.values())
         self.class_weights = torch.tensor([
             max_count / label_counts[i] for i in range(3)
         ])
-        print("Weights Distribution")
-        print(label_counts)
 
     def train_dataloader(self):
         return DataLoader(
