@@ -4,13 +4,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, ConcatDataset
 from transformers import DebertaV2Model, DebertaV2Tokenizer
-from pytorch_lightning.callbacks import EarlyStopping
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.metrics import f1_score
 import numpy as np
 from datasets import load_dataset
 from collections import Counter
 from typing import Dict, List, Optional
 
+torch.set_float32_matmul_precision('high')
 
 class SentimentDataset(torch.utils.data.Dataset):
     def __init__(self, dataset, tokenizer, dataset_name, max_length=512):
@@ -304,7 +305,7 @@ def train_model():
     # 配置参数
     config = {
         'model_name': "microsoft/deberta-v3-base",
-        'batch_size': 32,
+        'batch_size': 16,
         'max_length': 512,
         'num_experts': 5,
         'learning_rate': 2e-5,
@@ -340,11 +341,21 @@ def train_model():
         verbose=True
     )
 
+    checkpoint_callback = ModelCheckpoint(
+        dirpath='checkpoints',  # 保存路径
+        filename='deberta-sentiment-{epoch:02d}-{val_f1:.4f}',  # 文件名格式
+        monitor='val_f1',  # 监控的指标
+        mode='max',  # 因为是f1分数所以用max
+        save_top_k=1,  # 保存得分最高的k个模型
+        save_last=True,  # 同时保存最后一个epoch的模型
+        verbose=True
+    )
+
     # 初始化训练器
     trainer = pl.Trainer(
         max_epochs=config['max_epochs'],
         accelerator='gpu',
-        callbacks=[early_stopping],
+        callbacks=[early_stopping, checkpoint_callback],
         precision="bf16",  # 使用混合精度训练
         gradient_clip_val=1.0
     )
