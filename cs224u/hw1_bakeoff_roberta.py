@@ -82,7 +82,7 @@ class SentimentClassifier(pl.LightningModule):
             num_experts: int = 5,
             num_labels: int = 3,
             hidden_size: int = 768,
-            dropout: float = 0.4,
+            dropout: float = 0.5,
             learning_rate: float = 2e-5
     ):
         super().__init__()
@@ -306,7 +306,7 @@ def train_model():
     # 配置参数
     config = {
         'model_name': "google/electra-base-discriminator",
-        'batch_size': 512,
+        'batch_size': 64,
         'max_length': 512,
         'num_experts': 5,
         'learning_rate': 2e-5,
@@ -337,7 +337,7 @@ def train_model():
     early_stopping = EarlyStopping(
         monitor='val_f1',
         mode='max',
-        patience=6,
+        patience=3,
         min_delta=1e-6,
         verbose=True
     )
