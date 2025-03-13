@@ -89,7 +89,7 @@ class SentimentClassifier(pl.LightningModule):
         self.save_hyperparameters()  # 这个直接把上面的所有args都保存了，也就是lr也保存起来了，这个特性实在不是很好...
 
         # 加载预训练模型
-        self.roberta = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+        self.deberta = AutoModel.from_pretrained(model_name, trust_remote_code=True)
         self.deberta.config.hidden_dropout_prob = dropout
         self.deberta.config.attention_probs_dropout_prob = dropout
 
@@ -305,8 +305,8 @@ class SentimentDataModule(pl.LightningDataModule):
 def train_model():
     # 配置参数
     config = {
-        'model_name': "cardiffnlp/twitter-roberta-base-sentiment-latest",
-        'batch_size': 64,
+        'model_name': "google/electra-base-discriminator",
+        'batch_size': 512,
         'max_length': 512,
         'num_experts': 5,
         'learning_rate': 2e-5,
