@@ -25,6 +25,7 @@ class SentimentDataset(torch.utils.data.Dataset):
             return [{"sentence": item["sentence"], "gold_label": item["gold_label"]} for item in dataset]
 
         processed_data = []
+
         def convert_sst_label(s):
             return s.split(" ")[-1]
 
@@ -85,7 +86,7 @@ class SentimentClassifier(pl.LightningModule):
             learning_rate: float = 2e-5
     ):
         super().__init__()
-        self.save_hyperparameters() # 这个直接把上面的所有args都保存了，也就是lr也保存起来了，这个特性实在不是很好...
+        self.save_hyperparameters()  # 这个直接把上面的所有args都保存了，也就是lr也保存起来了，这个特性实在不是很好...
 
         # 加载预训练模型
         self.deberta = DebertaV2Model.from_pretrained(model_name)
@@ -102,17 +103,18 @@ class SentimentClassifier(pl.LightningModule):
             nn.Softmax(dim=-1)
         )
 
-        # 输出层
-        self.classifier = nn.Sequential(
-            nn.Linear(num_labels + hidden_size, hidden_size),
-            nn.LayerNorm(hidden_size),
-            nn.Dropout(dropout),
-            nn.ReLU(),
-            nn.Linear(hidden_size, num_labels)
-        )
+        # # 输出层
+        # self.classifier = nn.Sequential(
+        #     nn.Linear(num_labels + hidden_size, hidden_size),
+        #     nn.LayerNorm(hidden_size),
+        #     nn.Dropout(dropout),
+        #     nn.ReLU(),
+        #     nn.Linear(hidden_size, num_labels)
+        # )
 
         # 类别权重
         self.register_buffer('class_weights', torch.ones(num_labels))
+        self.validation_step_outputs = []
 
     def forward(self, input_ids, attention_mask):
         outputs = self.deberta(input_ids, attention_mask)
@@ -126,18 +128,18 @@ class SentimentClassifier(pl.LightningModule):
         # 专家输出
         expert_outputs = torch.stack([
             expert(cls_output) for expert in self.experts
-        ])
+        ]).permute(1, 0, 2)
         expert_output = torch.sum(
             router_weights.unsqueeze(-1) * expert_outputs,
-            dim=0
+            dim=1
         )
 
         # 合并专家输出和pooler输出
-        pooler_output = outputs.pooler_output
-        final_input = torch.cat([expert_output, pooler_output], dim=-1)
-        logits = self.classifier(final_input)
+        # pooler_output = outputs.pooler_output
+        # final_input = torch.cat([expert_output, pooler_output], dim=-1)
+        # logits = self.classifier(final_input)
 
-        return logits, router_weights
+        return expert_output, router_weights
 
     def compute_loss(self, logits, labels, router_weights):
         # 分类损失
@@ -172,14 +174,20 @@ class SentimentClassifier(pl.LightningModule):
         loss = self.compute_loss(logits, batch['labels'], router_weights)
 
         preds = torch.argmax(logits, dim=1)
-
-        return {
+        self.validation_step_outputs.append({
             'val_loss': loss,
             'preds': preds,
             'labels': batch['labels']
-        }
+        })
+        self.log('val_loss_step', loss, prog_bar=True)
 
-    def validation_epoch_end(self, outputs):
+        return loss
+
+    def on_validation_epoch_start(self):
+        self.validation_step_outputs = []
+
+    def on_validation_epoch_end(self):
+        outputs = self.validation_step_outputs
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
 
         all_preds = torch.cat([x['preds'] for x in outputs])
@@ -190,7 +198,9 @@ class SentimentClassifier(pl.LightningModule):
         self.log_dict({
             'val_loss': avg_loss,
             'val_f1': f1
-        })
+        }, prog_bar=True, sync_dist=True)
+        self.validation_step_outputs.clear()
+        return {'val_loss': avg_loss, 'val_f1': f1}
 
     def compute_f1(self, preds, labels):
         return torch.tensor(f1_score(
@@ -334,7 +344,6 @@ def train_model():
     trainer = pl.Trainer(
         max_epochs=config['max_epochs'],
         accelerator='gpu',
-        devices=0,
         callbacks=[early_stopping],
         precision="bf16",  # 使用混合精度训练
         gradient_clip_val=1.0
