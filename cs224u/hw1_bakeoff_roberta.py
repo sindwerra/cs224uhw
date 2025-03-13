@@ -92,6 +92,7 @@ class SentimentClassifier(pl.LightningModule):
         self.deberta = AutoModel.from_pretrained(model_name, trust_remote_code=True)
         self.deberta.config.hidden_dropout_prob = dropout
         self.deberta.config.attention_probs_dropout_prob = dropout
+        self.deberta.train()
 
         # 专家模型
         self.experts = nn.ModuleList([

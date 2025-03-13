@@ -91,6 +91,7 @@ class SentimentClassifier(pl.LightningModule):
 
         # 加载预训练模型
         self.deberta = DebertaV2Model.from_pretrained(model_name)
+        self.deberta.train()
 
         # 专家模型
         self.experts = nn.ModuleList([
@@ -336,7 +337,7 @@ def train_model():
     early_stopping = EarlyStopping(
         monitor='val_f1',
         mode='max',
-        patience=6,
+        patience=3,
         min_delta=1e-6,
         verbose=True
     )

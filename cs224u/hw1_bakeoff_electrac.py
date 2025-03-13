@@ -92,6 +92,7 @@ class SentimentClassifier(pl.LightningModule):
         self.deberta = AutoModel.from_pretrained(model_name, trust_remote_code=True)
         self.deberta.config.hidden_dropout_prob = dropout
         self.deberta.config.attention_probs_dropout_prob = dropout
+        self.deberta.train()
 
         # 专家模型
         self.experts = nn.ModuleList([
@@ -322,14 +323,14 @@ def train_model():
     early_stopping = EarlyStopping(
         monitor='val_f1',
         mode='max',
-        patience=6,
+        patience=3,
         min_delta=1e-6,
         verbose=True
     )
 
     checkpoint_callback = ModelCheckpoint(
         dirpath='checkpoints',  # 保存路径
-        filename='RoBERTa-sentiment-{epoch:02d}-{val_f1:.4f}',  # 文件名格式
+        filename='ELECTRA-sentiment-{epoch:02d}-{val_f1:.4f}',  # 文件名格式
         monitor='val_f1',  # 监控的指标
         mode='max',  # 因为是f1分数所以用max
         save_top_k=1,  # 保存得分最高的k个模型
