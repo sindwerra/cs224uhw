@@ -91,6 +91,8 @@ class SentimentClassifier(pl.LightningModule):
 
         # 加载预训练模型
         self.deberta = DebertaV2Model.from_pretrained(model_name)
+        self.deberta.config.hidden_dropout_prob = dropout
+        self.deberta.config.attention_probs_dropout_prob = dropout
         self.deberta.train()
 
         # 专家模型
@@ -119,6 +121,7 @@ class SentimentClassifier(pl.LightningModule):
         self.validation_step_outputs = []
 
     def forward(self, input_ids, attention_mask):
+        self.deberta.train()
         outputs = self.deberta(input_ids, attention_mask)
 
         # 获取[CLS]表示
