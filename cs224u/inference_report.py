@@ -204,4 +204,5 @@ if __name__ == "__main__":
     
     # 创建DataFrame
     df = pd.DataFrame(rows)
+    df.to_excel("inference_result.xlsx")
     
