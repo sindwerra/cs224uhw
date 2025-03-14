@@ -83,7 +83,7 @@ class SentimentClassifier(pl.LightningModule):
             num_experts: int = 5,
             num_labels: int = 3,
             hidden_size: int = 768,
-            dropout: float = 0.1,
+            dropout: float = 0.5,
             learning_rate: float = 2e-5
     ):
         super().__init__()
