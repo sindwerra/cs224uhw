@@ -281,6 +281,7 @@ class SentimentDataModule(pl.LightningDataModule):
         self.class_weights = torch.tensor([
             max_count / label_counts[i] for i in range(3)
         ])
+        self.class_weights[0] += 1
 
     def train_dataloader(self):
         return DataLoader(
@@ -307,7 +308,7 @@ def train_model():
     # 配置参数
     config = {
         'model_name': "microsoft/deberta-v3-base",
-        'batch_size': 16,
+        'batch_size': 64,
         'max_length': 512,
         'num_experts': 5,
         'learning_rate': 2e-5,
@@ -358,7 +359,7 @@ def train_model():
         max_epochs=config['max_epochs'],
         accelerator='gpu',
         callbacks=[early_stopping, checkpoint_callback],
-        precision="bf16",  # 使用混合精度训练
+        precision="bf16-mixed",  # 使用混合精度训练
         gradient_clip_val=1.0
     )
 
