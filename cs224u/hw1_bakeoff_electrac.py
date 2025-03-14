@@ -295,7 +295,7 @@ def train_model():
         'model_name': "google/electra-base-discriminator",
         'batch_size': 32,
         'max_length': 512,
-        'num_experts': 10,
+        'num_experts': 5,
         'learning_rate': 2e-5,
         'max_epochs': 50
     }
