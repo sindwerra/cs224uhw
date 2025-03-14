@@ -311,7 +311,7 @@ def train_model():
     # 配置参数
     config = {
         'model_name': "microsoft/deberta-v3-base",
-        'batch_size': 64,
+        'batch_size': 32,
         'max_length': 512,
         'num_experts': 5,
         'learning_rate': 2e-5,
