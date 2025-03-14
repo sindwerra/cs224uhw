@@ -148,7 +148,6 @@ class SentimentClassifier(pl.LightningModule):
 
     def compute_loss(self, logits, labels, router_weights):
         # 分类损失
-        print(self.class_weights)
         ce_loss = F.cross_entropy(logits, labels, weight=self.class_weights)
 
         # 路由损失

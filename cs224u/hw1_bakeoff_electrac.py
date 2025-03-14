@@ -82,7 +82,7 @@ class SentimentClassifier(pl.LightningModule):
             num_experts: int = 5,
             num_labels: int = 3,
             hidden_size: int = 768,
-            dropout: float = 0.4,
+            dropout: float = 0.5,
             learning_rate: float = 2e-5
     ):
         super().__init__()
@@ -112,7 +112,7 @@ class SentimentClassifier(pl.LightningModule):
 
     def forward(self, input_ids, attention_mask):
         outputs = self.deberta(input_ids, attention_mask)
-
+        self.deberta.train()
         # 获取[CLS]表示
         cls_output = outputs.last_hidden_state[:, 0]
 
@@ -266,6 +266,7 @@ class SentimentDataModule(pl.LightningDataModule):
         self.class_weights = torch.tensor([
             max_count / label_counts[i] for i in range(3)
         ])
+        self.class_weights[0] += 1
 
     def train_dataloader(self):
         return DataLoader(
@@ -292,7 +293,7 @@ def train_model():
     # 配置参数
     config = {
         'model_name': "google/electra-base-discriminator",
-        'batch_size': 64,
+        'batch_size': 16,
         'max_length': 512,
         'num_experts': 5,
         'learning_rate': 2e-5,
