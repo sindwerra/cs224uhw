@@ -312,7 +312,7 @@ def train_model():
         'model_name': "microsoft/deberta-v3-base",
         'batch_size': 32,
         'max_length': 512,
-        'num_experts': 5,
+        'num_experts': 10,
         'learning_rate': 2e-5,
         'max_epochs': 50
     }
