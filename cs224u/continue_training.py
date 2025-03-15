@@ -77,14 +77,15 @@ class SentimentDataModule(pl.LightningDataModule):
 
     def setup(self, stage):
         # 加载数据集
-        # dynasent_r1 = load_dataset("dynabench/dynasent", "dynabench.dynasent.r1.all", trust_remote_code=True)
+        twitter_airline_ds = load_dataset("osanseviero/twitter-airline-sentiment", trust_remote_code=True)
         # dynasent_r2 = load_dataset("dynabench/dynasent", "dynabench.dynasent.r2.all", trust_remote_code=True)
-        sst5 = load_dataset("SetFit/sst5", trust_remote_code=True)
+        # sst5 = load_dataset("SetFit/sst5", trust_remote_code=True)
+        # amazon_review_ds =
 
         dataset_dict = {
-            # "r1": dynasent_r1,
+            "twitter_airline": twitter_airline_ds,
             # "r2": dynasent_r2,
-            "sst": sst5,
+            # "sst": sst5,
         }
 
         self.train_dataset = ConcatDataset([
