@@ -283,7 +283,7 @@ class SentimentDataModule(pl.LightningDataModule):
         self.class_weights = torch.tensor([
             max_count / label_counts[i] for i in range(3)
         ])
-        self.class_weights[0] += 1
+        self.class_weights[1] += 1
 
     def train_dataloader(self):
         return DataLoader(
