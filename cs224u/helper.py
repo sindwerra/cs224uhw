@@ -6,7 +6,7 @@ from tokenizers.pre_tokenizers import WhitespaceSplit
 from tokenizers.processors import TemplateProcessing
 from transformers import PreTrainedTokenizerFast
 
-SRC_DIRNAME = "../data/recogs"
+SRC_DIRNAME = "/Users/duli/Desktop/UT Austin/XCS224U/cs224u/data/recogs"
 
 
 def get_tokenizer(vocab_filename):

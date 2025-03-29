@@ -4,7 +4,7 @@ from transformers import EncoderDecoderModel
 
 from cs224u.torch_model_base import TorchModelBase
 from cs224u.compgen import recogs_exact_match
-from utils import SRC_DIRNAME, get_tokenizer, get_raw_dataset
+from helper import SRC_DIRNAME, get_tokenizer, get_raw_dataset
 from data import RecogsDataset
 
 
@@ -89,5 +89,10 @@ if __name__ == "__main__":
     recogs_model = RecogsModel()
     dataset = get_raw_dataset()
     # recogs_model.predict(dataset['dev'].input[: 2], device="cpu")
-    result = recogs_model.score(dataset["dev"].input, dataset["dev"].output, device="cpu")
-    print(result)
+    recogs_model.fit(dataset["train"].input[:1000], dataset["train"].output[:1000])
+    dev_result = recogs_model.score(dataset["dev"].input, dataset["dev"].output, device="cpu")
+    # gen_result = recogs_model.score(dataset["gen"].input, dataset["gen"].output, device="cpu")
+    test_result = recogs_model.score(dataset["test"].input, dataset["test"].output, device="cpu")
+    print(f"Dev result: {dev_result}")
+    # print(f"Gen result: {gen_result}")
+    print(f"Test result: {test_result}")
