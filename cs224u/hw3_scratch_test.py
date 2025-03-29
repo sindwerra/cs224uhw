@@ -8,11 +8,10 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT, OptimizerLRScheduler,
 from torch.utils.data import Dataset, DataLoader
 from typing import List, Tuple, Dict, Optional, Any
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+from lightning.pytorch import seed_everything
 from transformers import (
     T5Config,
     T5ForConditionalGeneration,
-    Trainer,
-    TrainingArguments,
     AdamW,
 )
 
@@ -21,6 +20,8 @@ from helper import get_tokenizer, get_raw_dataset
 from data import RecogsDataset
 # from pytorch_lightning.loggers import WandbLogger  # 可选: 使用wandb进行实验跟踪
 # import wandb
+
+seed_everything(42, workers=True)
 
 
 class T5RecogsModel(pl.LightningModule):
@@ -54,21 +55,27 @@ class T5RecogsModel(pl.LightningModule):
             self.enc_tok.vocab_size,
             self.config.d_model,
             padding_idx=self.enc_tok.pad_token_id,
+            device=self.device,
         )
         self.encdec.decoder.embed_tokens = nn.Embedding(
             self.dec_tok.vocab_size,
             self.config.d_model,
             padding_idx=self.dec_tok.pad_token_id,
+            device=self.device,
         )
         self.encdec.lm_head = nn.Linear(
             self.config.d_model,
             self.dec_tok.vocab_size,
             bias=False,
+            device=self.device
         )
         self.encdec.lm_head.weight = self.encdec.decoder.embed_tokens.weight
+        self.encdec.to(self.device)
         self.encdec.train()
 
     def forward(self, X_pad, X_mask, y_pad, y_mask):
+        X_pad, X_mask, y_pad, y_mask = X_pad.to(self.device), X_mask.to(self.device), y_pad.to(self.device), y_mask.to(self.device)
+        self.encdec.to(self.device)
         outputs = self.encdec(
             input_ids=X_pad,
             attention_mask=X_mask,
@@ -80,10 +87,10 @@ class T5RecogsModel(pl.LightningModule):
     def training_step(self, batch, idx):
         X_pad, X_mask, y_pad, y_mask, label = [x.to(self.device) for x in batch]
         outputs = self(
-            input_ids=X_pad,
-            attention_mask=X_mask,
-            decoder_attention_mask=y_mask,
-            labels=label,
+            X_pad,
+            X_mask,
+            y_mask,
+            label,
         )
         loss = outputs.loss
         self.log("train_loss", loss, prog_bar=True)
@@ -100,8 +107,10 @@ class T5RecogsModel(pl.LightningModule):
         })
 
     def on_validation_epoch_end(self):
-        preds = torch.stack([x["preds"] for x in self.validation_step_outputs])
-        labels = torch.stack([x["labels"] for x in self.validation_step_outputs])
+        preds = []
+        for x in self.validation_step_outputs:
+            preds += x["preds"]
+        labels = self.val_dataloader().dataset.original_y
         vals = [int(recogs_exact_match(gold, pred)) for gold, pred in zip(labels, preds)]
         accuracy = sum(vals) / len(vals)
         self.log("val_accuracy", accuracy, prog_bar=True, sync_dist=True)
@@ -111,16 +120,17 @@ class T5RecogsModel(pl.LightningModule):
     def _predict(self, X_pad, X_mask):
         preds = []
         with torch.no_grad():
-            """
-            Mac临时代码
-            """
-            X_pad, X_mask = X_pad.to("cpu"), X_mask.to("cpu")
-            self.encdec.to("cpu")
-            """
-            END
-            """
+            # """
+            # Mac临时代码
+            # """
+            # X_pad, X_mask = X_pad.to("cpu"), X_mask.to("cpu")
+            # self.encdec.to("cpu")
+            # """
+            # END
+            # """
             self.encdec.eval()
 
+            X_pad, X_mask = X_pad.to(self.device), X_mask.to(self.device)
             outputs = self.encdec.generate(
                 X_pad,
                 attention_mask=X_mask,
@@ -157,8 +167,8 @@ class T5RecogsModel(pl.LightningModule):
         train_dataset = RecogsDataset(
             self.enc_tok,
             self.dec_tok,
-            self.raw_dataset["train"].input[:100],
-            self.raw_dataset["train"].output[:100],
+            self.raw_dataset["train"].input,
+            self.raw_dataset["train"].output,
         )
         return DataLoader(
             train_dataset,
@@ -172,8 +182,8 @@ class T5RecogsModel(pl.LightningModule):
         val_dataset = RecogsDataset(
             self.enc_tok,
             self.dec_tok,
-            self.raw_dataset["gen"].input[:100],
-            self.raw_dataset["gen"].output[:100],
+            self.raw_dataset["gen"].input,
+            self.raw_dataset["gen"].output,
         )
         return DataLoader(
             val_dataset,
@@ -209,18 +219,19 @@ if __name__ == "__main__":
     )
     checkpoint_callback = ModelCheckpoint(
         dirpath='checkpoints',
-        filename='deberta-sentiment-{epoch:02d}-{val_accuracy:.4f}',
-        monitor='val_accuracy',  # Saving Metrics: Macro F1
+        filename='flan-t5-{epoch:02d}-{val_accuracy:.4f}',
+        monitor='val_accuracy',
         mode='max',
         save_top_k=1,  # Save Top 1 Model Weights
         save_last=False,
-        verbose=True
+        save_weights_only=True,
+        verbose=True,
     )
     trainer = pl.Trainer(
         max_epochs=config["max_epochs"],
         accelerator=config["device"],
         callbacks=[early_stopping, checkpoint_callback],
-        # num_sanity_val_steps=0,
+        deterministic=True,
         # precision="bf16-mixed"
     )
     trainer.fit(model)

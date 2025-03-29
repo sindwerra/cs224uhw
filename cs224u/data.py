@@ -6,6 +6,7 @@ class RecogsDataset(torch.utils.data.Dataset):
     def __init__(self, enc_tokenizer, dec_tokenizer, X, y=None):
         self.X = [enc_tokenizer.encode(s) for s in X]
         self.y = y
+        self.original_y = self.y
         if y is not None:
             self.y = [dec_tokenizer.encode(s) for s in y]
 
