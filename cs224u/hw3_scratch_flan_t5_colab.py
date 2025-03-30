@@ -198,7 +198,7 @@ if __name__ == "__main__":
         'max_epochs': 50,
         "device": "cuda"
     }
-    SRC_DIRNAME = "./data/recogs"
+    SRC_DIRNAME = "/content/cs224uhw/cs224u/data/recogs"
     model = T5RecogsModel(
         f"{SRC_DIRNAME}/src_vocab.txt",
         f"{SRC_DIRNAME}/tgt_vocab.txt",
