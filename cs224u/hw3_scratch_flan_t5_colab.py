@@ -3,7 +3,7 @@ import os
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, ConcatDataset
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch import seed_everything
 from transformers import (
@@ -166,8 +166,21 @@ class T5RecogsModel(pl.LightningModule):
             self.raw_dataset["train"].input,
             self.raw_dataset["train"].output,
         )
+        dev_dataset = RecogsDataset(
+            self.enc_tok,
+            self.dec_tok,
+            self.raw_dataset["dev"].input,
+            self.raw_dataset["dev"].output,
+        )
+        test_dataset = RecogsDataset(
+            self.enc_tok,
+            self.dec_tok,
+            self.raw_dataset["test"].input,
+            self.raw_dataset["test"].output,
+        )
+        concat_dataset = ConcatDataset([train_dataset, dev_dataset, test_dataset])
         return DataLoader(
-            train_dataset,
+            concat_dataset,
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
             collate_fn=train_dataset.collate_fn,
