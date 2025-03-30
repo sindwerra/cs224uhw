@@ -9,14 +9,13 @@ from lightning.pytorch import seed_everything
 from transformers import (
     T5Config,
     T5ForConditionalGeneration,
-    AdamW,
 )
+from torch.optim import AdamW
 
 from cs224u.compgen import recogs_exact_match
 from helper import get_tokenizer, get_raw_dataset
 from data import RecogsDataset
-# from pytorch_lightning.loggers import WandbLogger  # 可选: 使用wandb进行实验跟踪
-# import wandb
+
 
 seed_everything(42, workers=True)
 
