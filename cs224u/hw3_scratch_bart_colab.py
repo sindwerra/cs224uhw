@@ -213,7 +213,7 @@ class BARTRecogsModel(pl.LightningModule):
 if __name__ == "__main__":
     # Early stopping mechanism
     config = {
-        'batch_size': 16,
+        'batch_size': 32,
         'learning_rate': 1e-4,
         'max_epochs': 50,
         "device": "cuda"
