@@ -31,7 +31,7 @@ class T5RecogsModel(pl.LightningModule):
     ):
         super().__init__()
         self.save_hyperparameters()
-        self.config = T5Config.from_pretrained("google/flan-t5-large", tie_word_embeddings=False)
+        self.config = T5Config.from_pretrained("google/byt5-base", tie_word_embeddings=False)
         self.config.tie_word_embeddings = False
         self.encdec = T5ForConditionalGeneration(self.config)
         self.encdec.shared = None
