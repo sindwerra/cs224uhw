@@ -193,7 +193,7 @@ class T5RecogsModel(pl.LightningModule):
 if __name__ == "__main__":
     # Early stopping mechanism
     config = {
-        'batch_size': 32,
+        'batch_size': 16,
         'learning_rate': 1e-4,
         'max_epochs': 50,
         "device": "cuda"
