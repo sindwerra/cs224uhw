@@ -137,7 +137,8 @@ class BARTRecogsModel(pl.LightningModule):
                 X_pad,
                 attention_mask=X_mask,
                 max_new_tokens=512,
-                eos_token_id=self.encdec.config.eos_token_id
+                eos_token_id=self.encdec.config.eos_token_id,
+                num_beams=1,
             )
             results = self.dec_tok.batch_decode(
                 outputs,
