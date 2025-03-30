@@ -3,10 +3,7 @@ import os
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-import learn2learn as l2l
-from pytorch_lightning.utilities.types import STEP_OUTPUT, OptimizerLRScheduler, TRAIN_DATALOADERS, EVAL_DATALOADERS
 from torch.utils.data import Dataset, DataLoader
-from typing import List, Tuple, Dict, Optional, Any
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch import seed_everything
 from transformers import (
