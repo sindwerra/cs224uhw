@@ -140,7 +140,7 @@ class RecogsModel(TorchModelBase):
 
 
 if __name__ == "__main__":
-    recogs_model = RecogsModel()
+    recogs_model = RecogsModel(batch_size=512, max_iter=100, eta=1e-4, optimizer_class=torch.optim.AdamW)
     dataset = get_raw_dataset()
     # recogs_model.predict(dataset['dev'].input[: 2], device="cpu")
     recogs_model.fit(dataset["train"].input, dataset["train"].output)
