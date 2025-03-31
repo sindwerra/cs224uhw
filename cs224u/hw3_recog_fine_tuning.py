@@ -49,6 +49,9 @@ class ReCOGSModel(pl.LightningModule):
         )
         return outputs
 
+    def on_train_epoch_start(self):
+        self.encdec.to(self.device)
+
     def training_step(self, batch, idx):
         X_pad, X_mask, y_pad, y_mask, label = [x.to(self.device) for x in batch]
         outputs = self(
@@ -94,7 +97,7 @@ class ReCOGSModel(pl.LightningModule):
             # """
             self.encdec.eval()
 
-            X_pad, X_mask = X_pad.to(self.device), X_mask.to(self.device)
+            # X_pad, X_mask = X_pad.to(self.device), X_mask.to(self.device)
             outputs = self.encdec.generate(
                 X_pad,
                 attention_mask=X_mask,
@@ -174,12 +177,12 @@ class ReCOGSModel(pl.LightningModule):
 if __name__ == "__main__":
     # Early stopping mechanism
     config = {
-        'batch_size': 32,
+        'batch_size': 512,
         'learning_rate': 1e-4,
         'max_epochs': 50,
         "device": "cuda"
     }
-    SRC_DIRNAME = "/content/cs224uhw/cs224u/data/recogs"
+    SRC_DIRNAME = "./data/recogs"
     model = ReCOGSModel(
         f"{SRC_DIRNAME}/src_vocab.txt",
         f"{SRC_DIRNAME}/tgt_vocab.txt",
