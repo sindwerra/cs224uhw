@@ -164,8 +164,8 @@ class RecogsModel(TorchModelBase):
 
 if __name__ == "__main__":
     recogs_model = RecogsModel(
-        batch_size=32,
-        max_iter=100,
+        batch_size=16,
+        max_iter=50,
         eta=1e-4,
         optimizer_class=torch.optim.AdamW,
         early_stopping=True,
