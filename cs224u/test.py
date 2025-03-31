@@ -83,7 +83,8 @@ class RecogsModule(nn.Module):
             input_ids=X_pad,
             attention_mask=X_mask,
             decoder_attention_mask=y_mask,
-            labels=y_pad)
+            labels=y_pad
+        )
         return outputs
 
 
@@ -142,8 +143,8 @@ if __name__ == "__main__":
     recogs_model = RecogsModel()
     dataset = get_raw_dataset()
     # recogs_model.predict(dataset['dev'].input[: 2], device="cpu")
-    recogs_model.fit(dataset["train"].input[:100], dataset["train"].output[:100])
-    # dev_result = recogs_model.score(dataset["dev"].input, dataset["dev"].output, device="cpu")
+    recogs_model.fit(dataset["train"].input, dataset["train"].output)
+    gen = recogs_model.score(dataset["gen"].input, dataset["gen"].output)
     # gen_result = recogs_model.score(dataset["gen"].input, dataset["gen"].output, device="cpu")
     # test_result = recogs_model.score(dataset["test"].input, dataset["test"].output, device="cpu")
     # print(f"Dev result: {dev_result}")
