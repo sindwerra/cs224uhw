@@ -85,20 +85,20 @@ class RecogsModule(nn.Module):
         # self.encdec = CustomEncoderDecoderModel.from_pretrained(
         #     f"ReCOGS/ReCOGS-model")
         self.encdec.encoder.embed_tokens = nn.Embedding(
-            self.enc_tok.vocab_size,
+            762,
             self.config.d_model,
-            padding_idx=self.enc_tok.pad_token_id,
+            padding_idx=0,
             device=self.device,
         )
         self.encdec.decoder.embed_tokens = nn.Embedding(
-            self.dec_tok.vocab_size,
+            729,
             self.config.d_model,
-            padding_idx=self.dec_tok.pad_token_id,
+            padding_idx=0,
             device=self.device,
         )
         self.encdec.lm_head = nn.Linear(
             self.config.d_model,
-            self.dec_tok.vocab_size,
+            729,
             bias=False,
             device=self.device
         )
