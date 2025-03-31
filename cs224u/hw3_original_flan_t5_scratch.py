@@ -88,19 +88,16 @@ class RecogsModule(nn.Module):
             762,
             self.config.d_model,
             padding_idx=0,
-            device=self.device,
         )
         self.encdec.decoder.embed_tokens = nn.Embedding(
             729,
             self.config.d_model,
             padding_idx=0,
-            device=self.device,
         )
         self.encdec.lm_head = nn.Linear(
             self.config.d_model,
             729,
             bias=False,
-            device=self.device
         )
         self.encdec.lm_head.weight = self.encdec.decoder.embed_tokens.weight
 
