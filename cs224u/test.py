@@ -1,5 +1,8 @@
+from itertools import chain
+
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from transformers import EncoderDecoderModel
 
 from torch_model_base import TorchModelBase
@@ -72,19 +75,76 @@ class RecogsLoss(nn.Module):
         return outputs.loss
 
 
+class ExpertModel(nn.Module):
+    def __init__(self, input_size: int, hidden_size: int, num_labels: int, dropout: float):
+        super().__init__()
+        self.dense = nn.Linear(input_size, hidden_size)
+        self.dropout = nn.Dropout(dropout)
+        self.layernorm = nn.LayerNorm(hidden_size)
+        self.out_proj = nn.Linear(hidden_size, num_labels)
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        x = self.dropout(F.gelu(self.dense(hidden_states)))
+        x = self.layernorm(x)
+        x = self.out_proj(x)
+        return x
+
+
 class RecogsModule(nn.Module):
-    def __init__(self):
+    def __init__(self, dropout=0.1):
         super().__init__()
         self.encdec = EncoderDecoderModel.from_pretrained(
             f"ReCOGS/ReCOGS-model")
+        self.encdec.config.decoder.hidden_dropout_prob = dropout
+        self.encdec.config.decoder.attention_probs_dropout_prob = dropout
+        self.encdec.config.encoder.hidden_dropout_prob = dropout
+        self.encdec.config.encoder.attention_probs_dropout_prob = dropout
+        self.experts = nn.ModuleList([
+            ExpertModel(
+                self.encdec.config.encoder.hidden_size,
+                self.encdec.config.encoder.hidden_size // 2,
+                self.encdec.config.decoder.vocab_size,
+                0.3
+            )
+            for _ in range(5)
+        ])
+        self.router = nn.Sequential(
+            nn.Linear(self.encdec.config.encoder.hidden_size, 5),
+            nn.Softmax(dim=-1),
+        )
 
     def forward(self, X_pad, X_mask, y_pad, y_mask, labels=None):
         outputs = self.encdec(
             input_ids=X_pad,
             attention_mask=X_mask,
             decoder_attention_mask=y_mask,
-            labels=y_pad
+            labels=y_pad,
+            output_hidden_states=True,
         )
+        decoder_last_state = outputs.decoder_hidden_states[-1]
+        router_weights = self.router(decoder_last_state)
+        expert_outputs = torch.stack([
+            expert(decoder_last_state) for expert in self.experts
+        ]).permute(1, 2, 0, 3)
+        expert_outputs = torch.sum(
+            router_weights.unsqueeze(-1) * expert_outputs,
+            dim=2
+        )
+        if y_pad is not None:
+            loss_fct = nn.CrossEntropyLoss(ignore_index=-100)
+            expert_loss = loss_fct(
+                expert_outputs.view(-1, self.encdec.config.decoder.vocab_size),
+                y_pad.view(-1)
+            )
+            l2_reg = sum([
+                torch.norm(param) for param in chain(
+                    self.encdec.parameters(),
+                    self.experts.parameters(),
+                )
+            ])
+
+            # 合并损失（假设原始损失为 outputs.loss）
+            outputs.loss = outputs.loss + 0.3 * expert_loss + 0.01 * l2_reg  # 可以调整权重
         return outputs
 
 
@@ -104,7 +164,7 @@ class RecogsModel(TorchModelBase):
             self.initialize()
 
     def build_graph(self):
-        return RecogsModule()
+        return RecogsModule(dropout=0.3)
 
     def build_dataset(self, X, y=None):
         return RecogsDataset(
@@ -141,19 +201,25 @@ class RecogsModel(TorchModelBase):
 
 if __name__ == "__main__":
     recogs_model = RecogsModel(
-        batch_size=512,
-        max_iter=100,
-        eta=5e-4,
+        batch_size=256,
+        max_iter=50,
+        eta=1e-4,
         optimizer_class=torch.optim.AdamW,
         early_stopping=True,
-        n_iter_no_change=10,
+        n_iter_no_change=5,
     )
     dataset = get_raw_dataset()
+    length = len(dataset["train"])
     # recogs_model.predict(dataset['dev'].input[: 2], device="cpu")
+    print(f"Len of train set: {length}")
     recogs_model.fit(dataset["train"].input, dataset["train"].output)
-    # gen = recogs_model.score(dataset["gen"].input, dataset["gen"].output)
+    dev_result = recogs_model.score(dataset["dev"].input, dataset["dev"].output)
     gen_result = recogs_model.score(dataset["gen"].input, dataset["gen"].output)
-    # test_result = recogs_model.score(dataset["test"].input, dataset["test"].output, device="cpu")
-    # print(f"Dev result: {dev_result}")
+    test_result = recogs_model.score(dataset["test"].input, dataset["test"].output)
+    print(f"Dev result: {dev_result}")
     print(f"Gen result: {gen_result}")
-    # print(f"Test result: {test_result}")
+    print(f"Test result: {test_result}")
+    torch.save(
+        recogs_model.model.state_dict(),
+        f"./checkpoints/recogs-{gen_result:.4f}.pth'"
+    )
